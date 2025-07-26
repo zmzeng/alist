@@ -2,6 +2,7 @@ package middlewares
 
 import (
 	"crypto/subtle"
+	"fmt"
 
 	"github.com/alist-org/alist/v3/internal/conf"
 	"github.com/alist-org/alist/v3/internal/model"
@@ -68,6 +69,15 @@ func Auth(c *gin.Context) {
 		c.Abort()
 		return
 	}
+	if len(user.Role) > 0 {
+		roles, err := op.GetRolesByUserID(user.ID)
+		if err != nil {
+			common.ErrorStrResp(c, fmt.Sprintf("Fail to load roles: %v", err), 500)
+			c.Abort()
+			return
+		}
+		user.RolesDetail = roles
+	}
 	c.Set("user", user)
 	log.Debugf("use login token: %+v", user)
 	c.Next()
@@ -121,6 +131,19 @@ func Authn(c *gin.Context) {
 		common.ErrorStrResp(c, "Current user is disabled, replace please", 401)
 		c.Abort()
 		return
+	}
+	if len(user.Role) > 0 {
+		var roles []model.Role
+		for _, roleID := range user.Role {
+			role, err := op.GetRole(uint(roleID))
+			if err != nil {
+				common.ErrorStrResp(c, fmt.Sprintf("load role %d failed", roleID), 500)
+				c.Abort()
+				return
+			}
+			roles = append(roles, *role)
+		}
+		user.RolesDetail = roles
 	}
 	c.Set("user", user)
 	log.Debugf("use login token: %+v", user)
