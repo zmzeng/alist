@@ -5,7 +5,7 @@ RUN apk add --no-cache bash curl gcc git go musl-dev
 COPY go.mod go.sum ./
 RUN go mod download
 COPY ./ ./
-RUN bash build.sh release docker-multiplatform
+RUN bash build.sh release linux_musl_arm
 
 FROM alpine:edge
 
